@@ -1,0 +1,9 @@
+# Ignore artifacts:
+dist
+node_modules
+.vscode
+.idea
+
+#Fastify example files
+src/plugins/support.ts
+src/routes/example
