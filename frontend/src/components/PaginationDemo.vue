@@ -13,14 +13,7 @@ const paginationPageSize = ref(50);
 const paginationPageSizeSelector = ref([10, 25, 50, 100, 200, 500]);
 
 const onGridReady = async (params: { api: GridApi }) => {
-  // const gridApi = params.api;
   const url = "http://127.0.0.1:3000/api/fixtures";
-
-  // const api = this.api;
-  // window.addEventListener('resize', () => {
-  //   params.api.autoSizeAllColumns();
-  //   this.resizeColumnsToFit(this.gridApi, false);
-  // });
 
   const datasource = {
     getRows: async (params: IServerSideGetRowsParams) => {
@@ -30,7 +23,8 @@ const onGridReady = async (params: { api: GridApi }) => {
         console.log('request', request);
 
         const startRow = request.startRow ?? 0
-        const pageSize = Math.max(0, request.endRow ?? 0 - startRow);
+        const endRow = request.endRow ?? 0
+        const pageSize = Math.max(0, endRow - startRow);
 
         const currentPage = Math.floor(startRow / pageSize) + 1;
         const queryString = `?page=${currentPage}&size=${pageSize}`;
@@ -41,8 +35,6 @@ const onGridReady = async (params: { api: GridApi }) => {
           }
         });
 
-        console.log('response', response);
-
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -51,7 +43,6 @@ const onGridReady = async (params: { api: GridApi }) => {
           const data = await response.json() as FixtureRecord[];
           console.log('response', data);
 
-          // const page = await api(request, gridApi.paginationGetPageSize());
           params.success({
             rowData: data,
             rowCount: 500,
@@ -60,17 +51,6 @@ const onGridReady = async (params: { api: GridApi }) => {
         } catch (error) {
           console.error('Error fetching data', error);
         }
-
-        // this.currentRows = page.items;
-
-        // if (this.handleDataReceived) {
-        //   this.handleDataReceived(page.items, page.itemsCount);
-        // }
-
-
-
-        // this.gridApi?.autoSizeAllColumns();
-        // this.resizeColumnsToFit(this.gridApi, false);
       } catch (error) {
         console.error(error);
 
@@ -123,6 +103,7 @@ const colDefs = ref<(ColDef | undefined)[]>(
   <h1>{{ msg }}</h1>
 
   <div class="card">
+    <div>Paginationsize: {{ paginationPageSize }}</div>
     <AgGridVue
       :id="gridId"
       class="ag-theme-quartz"
