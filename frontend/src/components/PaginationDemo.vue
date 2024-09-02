@@ -1,66 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import {ColDef, GridApi, IServerSideGetRowsParams} from "ag-grid-community";
+import {ColDef} from "ag-grid-community";
 import {AgGridVue} from "ag-grid-vue3";
 import 'ag-grid-enterprise';
 import {FixtureRecord} from "../interfaces/fixture.interface.ts";
+import { GridService } from '../services/GridService.ts';
+import { getFixtures } from '../services/api.ts';
 
 defineProps<{ msg: string }>()
 
 const gridId = ref('pagination-grid');
-const rowModelType = ref('serverSide');
-const paginationPageSize = ref(50);
-const paginationPageSizeSelector = ref([10, 25, 50, 100, 200, 500]);
 
-const onGridReady = async (params: { api: GridApi }) => {
-  const url = "http://127.0.0.1:3000/api/fixtures";
-
-  const datasource = {
-    getRows: async (params: IServerSideGetRowsParams) => {
-      try {
-
-        let request = params.request;
-        console.log('request', request);
-
-        const startRow = request.startRow ?? 0
-        const endRow = request.endRow ?? 0
-        const pageSize = Math.max(0, endRow - startRow);
-
-        const currentPage = Math.floor(startRow / pageSize) + 1;
-        const queryString = `?page=${currentPage}&size=${pageSize}`;
-
-        const response = await fetch(`${url}${queryString}`, {
-          headers: {
-            'Access-Control-Allow-Origin': '*', // Required for CORS
-          }
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        try {
-          const data = await response.json() as FixtureRecord[];
-          console.log('response', data);
-
-          params.success({
-            rowData: data,
-            rowCount: 500,
-          });
-
-        } catch (error) {
-          console.error('Error fetching data', error);
-        }
-      } catch (error) {
-        console.error(error);
-
-        params.fail();
-      }
-    },
-  };
-
-  params.api.setGridOption('serverSideDatasource', datasource);
-}
+const gridService = ref<GridService<FixtureRecord>>(
+  new GridService(gridId.value, getFixtures),
+);
 
 const colDefs = ref<(ColDef | undefined)[]>(
   [
@@ -103,18 +56,18 @@ const colDefs = ref<(ColDef | undefined)[]>(
   <h1>{{ msg }}</h1>
 
   <div class="card">
-    <div>Paginationsize: {{ paginationPageSize }}</div>
+    <div>Paginationsize: {{ gridService.paginationPageSize }}</div>
     <AgGridVue
       :id="gridId"
       class="ag-theme-quartz"
       domLayout="autoHeight"
-      @grid-ready="onGridReady"
-      :rowModelType="rowModelType"
+      @grid-ready="gridService.onGridReady"
+      :rowModelType="gridService.rowModelType"
       :columnDefs="colDefs"
-      pagination
-      :paginationPageSize="paginationPageSize"
-      :paginationPageSizeSelector="paginationPageSizeSelector"
-      :cacheBlockSize="paginationPageSize"
+      pagination      
+      :paginationPageSize="gridService.paginationPageSize"
+      :paginationPageSizeSelector="gridService.paginationPageSizeSelector"
+      :cacheBlockSize="gridService.paginationPageSize"
       :maxBlocksInCache="1"
     />
   </div>
